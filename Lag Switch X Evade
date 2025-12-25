@@ -7,12 +7,13 @@ local player = Players.LocalPlayer
 
 -- SETTINGS
 local startDelay = 0.5
-local lagDuration = 5
+local lagDuration = 2
 local uiVisible = true
 
 -- GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "LagGui"
+gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 -- MAIN FRAME
@@ -21,7 +22,7 @@ mainFrame.Size = UDim2.fromScale(1,1)
 mainFrame.BackgroundTransparency = 1
 mainFrame.Parent = gui
 
--- DRAG FUNCTION (REUSABLE)
+-- DRAG FUNCTION
 local function makeDraggable(obj)
 	local dragging = false
 	local dragStart, startPos
@@ -43,8 +44,10 @@ local function makeDraggable(obj)
 	end)
 
 	UIS.InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch) then
+		if dragging and (
+			input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch
+		) then
 			local delta = input.Position - dragStart
 			obj.Position = UDim2.new(
 				startPos.X.Scale,
@@ -66,13 +69,12 @@ toggleBtn.TextColor3 = Color3.new(1,1,1)
 toggleBtn.Text = "☰"
 toggleBtn.TextScaled = true
 toggleBtn.Parent = gui
-
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,8)
 makeDraggable(toggleBtn)
 
--- DELAY CHANGER (NOT DRAGGABLE)
+-- DELAY BOX (NOT DRAGGABLE)
 local box = Instance.new("TextBox")
-box.Size = UDim2.fromOffset(140,32)
+box.Size = UDim2.fromOffset(120,28)
 box.Position = UDim2.fromScale(0.5,0.05)
 box.AnchorPoint = Vector2.new(0.5,0)
 box.BackgroundColor3 = Color3.new(0,0,0)
@@ -82,10 +84,9 @@ box.Text = tostring(startDelay)
 box.TextScaled = true
 box.ClearTextOnFocus = false
 box.Parent = mainFrame
+Instance.new("UICorner", box).CornerRadius = UDim.new(0,6)
 
-Instance.new("UICorner", box).CornerRadius = UDim.new(0,8)
-
--- DECIMAL ONLY INPUT
+-- DECIMAL ONLY
 box:GetPropertyChangedSignal("Text"):Connect(function()
 	local t = box.Text:gsub("[^%d%.]","")
 	local dot = t:find("%.")
@@ -98,9 +99,9 @@ box:GetPropertyChangedSignal("Text"):Connect(function()
 	end
 end)
 
--- LAG BUTTON (DRAGGABLE)
+-- LAG BUTTON (DRAGGABLE) ✅ 80x50
 local lagBtn = Instance.new("TextButton")
-lagBtn.Size = UDim2.fromOffset(100,50)
+lagBtn.Size = UDim2.fromOffset(80,50)
 lagBtn.Position = UDim2.fromScale(0.5,0.5)
 lagBtn.AnchorPoint = Vector2.new(0.5,0.5)
 lagBtn.BackgroundColor3 = Color3.new(0,0,0)
@@ -109,8 +110,7 @@ lagBtn.TextColor3 = Color3.new(1,1,1)
 lagBtn.Text = "Lag"
 lagBtn.TextScaled = true
 lagBtn.Parent = mainFrame
-
-Instance.new("UICorner", lagBtn).CornerRadius = UDim.new(0,12)
+Instance.new("UICorner", lagBtn).CornerRadius = UDim.new(0,8)
 
 local stroke = Instance.new("UIStroke")
 stroke.Thickness = 3
@@ -126,13 +126,13 @@ local function freezeLag()
 
 	while tick() < endTime do
 		RunService.RenderStepped:Wait()
-		for i = 1, 80000 do
+		for i = 1, 60000 do
 			math.random()
 		end
 	end
 end
 
--- CLICK LAG
+-- CLICK
 lagBtn.MouseButton1Click:Connect(function()
 	lagBtn.Text = "•••"
 	task.spawn(freezeLag)
@@ -142,7 +142,7 @@ lagBtn.MouseButton1Click:Connect(function()
 	end)
 end)
 
--- TOGGLE UI
+-- TOGGLE
 toggleBtn.MouseButton1Click:Connect(function()
 	uiVisible = not uiVisible
 	mainFrame.Visible = uiVisible
