@@ -1,0 +1,146 @@
+-- SETTINGS
+local startDelay = 0.5
+local lagDuration = 5
+local uiVisible = true
+
+local player = game.Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "LagGui"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- MAIN FRAME
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.fromScale(1, 1)
+mainFrame.BackgroundTransparency = 1
+mainFrame.Parent = gui
+
+-- TOGGLE BUTTON (TOP RIGHT)
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.fromOffset(40, 40)
+toggleBtn.Position = UDim2.fromScale(0.95, 0.05)
+toggleBtn.AnchorPoint = Vector2.new(0.5, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Text = "☰"
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.Parent = gui
+
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
+
+-- TEXTBOX (TOP CENTER - NOT DRAGGABLE)
+local box = Instance.new("TextBox")
+box.Size = UDim2.fromOffset(200, 40)
+box.Position = UDim2.fromScale(0.5, 0.05)
+box.AnchorPoint = Vector2.new(0.5, 0)
+box.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+box.TextColor3 = Color3.fromRGB(255, 255, 255)
+box.PlaceholderText = "Lag delay 0.5"
+box.Text = tostring(startDelay)
+box.ClearTextOnFocus = false
+box.TextScaled = true
+box.Font = Enum.Font.Gotham
+box.Parent = mainFrame
+
+Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+
+-- DECIMAL ONLY INPUT
+box:GetPropertyChangedSignal("Text"):Connect(function()
+	local t = box.Text
+	t = t:gsub("[^%d%.]", "")
+
+	local dot = t:find("%.")
+	if dot then
+		t = t:sub(1, dot) .. t:sub(dot + 1):gsub("%.", "")
+	end
+
+	box.Text = t
+	local num = tonumber(t)
+	if num then
+		startDelay = num
+	end
+end)
+
+-- LAG BUTTON (DRAGGABLE)
+local button = Instance.new("TextButton")
+button.Size = UDim2.fromOffset(100, 100)
+button.Position = UDim2.fromScale(0.5, 0.5)
+button.AnchorPoint = Vector2.new(0.5, 0.5)
+button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+button.TextColor3 = Color3.fromRGB(255, 255, 255)
+button.Text = "Lag"
+button.TextScaled = true
+button.Font = Enum.Font.GothamBold
+button.Parent = mainFrame
+
+Instance.new("UICorner", button).CornerRadius = UDim.new(0, 12)
+
+-- DRAG SYSTEM (ONLY BUTTON)
+local dragging, dragStart, startPos
+
+button.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = button.Position
+	end
+end)
+
+button.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		button.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- LAG FUNCTION
+local function lagClient()
+	task.wait(startDelay)
+	local endTime = tick() + lagDuration
+
+	while tick() < endTime do
+		for i = 1, 20000 do
+			math.random()
+		end
+		task.wait()
+	end
+end
+
+-- BUTTON CLICK
+button.MouseButton1Click:Connect(function()
+	button.Text = "•••"
+	task.spawn(lagClient)
+
+	task.delay(startDelay + lagDuration, function()
+		button.Text = "Lag"
+	end)
+end)
+
+-- TOGGLE BUTTON
+toggleBtn.MouseButton1Click:Connect(function()
+	uiVisible = not uiVisible
+	mainFrame.Visible = uiVisible
+end)
+
+-- KEYBIND F (HIDE / OPEN)
+UIS.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.F then
+		uiVisible = not uiVisible
+		mainFrame.Visible = uiVisible
+	end
+end)
