@@ -1,158 +1,133 @@
 -- SERVICES
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 
-local player = Players.LocalPlayer
-
--- SETTINGS
-local startDelay = 0.5
-local lagDuration = 5
-local uiVisible = true
+-- GLOBALS
+getgenv().lagDuration = 1
+local isLagActive = false
 
 -- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "LagGui"
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Name = "LagUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = CoreGui
 
--- MAIN FRAME
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.fromScale(1,1)
-mainFrame.BackgroundTransparency = 1
-mainFrame.Parent = gui
+local button = Instance.new("TextButton")
+button.Size = UDim2.fromOffset(70, 70)
+button.Position = UDim2.fromScale(0.1, 0.5)
+button.AnchorPoint = Vector2.new(0.5, 0.5)
+button.Text = "Lag"
+button.Font = Enum.Font.GothamBold
+button.TextSize = 16
+button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+button.BackgroundTransparency = 0.9
+button.TextColor3 = Color3.fromRGB(0, 0, 0)
+button.AutoButtonColor = false
+button.Active = true
+button.ZIndex = 10
+button.Parent = gui
 
--- DRAG FUNCTION (REUSABLE)
-local function makeDraggable(obj)
-	local dragging = false
-	local dragStart, startPos
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1, 0)
+corner.Parent = button
 
-	obj.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			dragStart = input.Position
-			startPos = obj.Position
-		end
-	end)
-
-	obj.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
-		end
-	end)
-
-	UIS.InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart
-			obj.Position = UDim2.new(
-				startPos.X.Scale,
-				startPos.X.Offset + delta.X,
-				startPos.Y.Scale,
-				startPos.Y.Offset + delta.Y
-			)
-		end
-	end)
-end
-
--- TOGGLE BUTTON (DRAGGABLE)
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.fromOffset(40,40)
-toggleBtn.Position = UDim2.fromScale(0.95,0.05)
-toggleBtn.AnchorPoint = Vector2.new(0.5,0)
-toggleBtn.BackgroundColor3 = Color3.new(0,0,0)
-toggleBtn.TextColor3 = Color3.new(1,1,1)
-toggleBtn.Text = "☰"
-toggleBtn.TextScaled = true
-toggleBtn.Parent = gui
-
-Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0,8)
-makeDraggable(toggleBtn)
-
--- DELAY CHANGER (NOT DRAGGABLE)
-local box = Instance.new("TextBox")
-box.Size = UDim2.fromOffset(140,32)
-box.Position = UDim2.fromScale(0.5,0.05)
-box.AnchorPoint = Vector2.new(0.5,0)
-box.BackgroundColor3 = Color3.new(0,0,0)
-box.TextColor3 = Color3.new(1,1,1)
-box.PlaceholderText = "Delay 0.5"
-box.Text = tostring(startDelay)
-box.TextScaled = true
-box.ClearTextOnFocus = false
-box.Parent = mainFrame
-
-Instance.new("UICorner", box).CornerRadius = UDim.new(0,8)
-
--- DECIMAL ONLY INPUT
-box:GetPropertyChangedSignal("Text"):Connect(function()
-	local t = box.Text:gsub("[^%d%.]","")
-	local dot = t:find("%.")
-	if dot then
-		t = t:sub(1,dot)..t:sub(dot+1):gsub("%.","")
-	end
-	box.Text = t
-	if tonumber(t) then
-		startDelay = tonumber(t)
-	end
-end)
-
--- LAG BUTTON (DRAGGABLE)
-local lagBtn = Instance.new("TextButton")
-lagBtn.Size = UDim2.fromOffset(100,50)
-lagBtn.Position = UDim2.fromScale(0.5,0.5)
-lagBtn.AnchorPoint = Vector2.new(0.5,0.5)
-lagBtn.BackgroundColor3 = Color3.new(0,0,0)
-lagBtn.BackgroundTransparency = 0.6
-lagBtn.TextColor3 = Color3.new(1,1,1)
-lagBtn.Text = "Lag"
-lagBtn.TextScaled = true
-lagBtn.Parent = mainFrame
-
-Instance.new("UICorner", lagBtn).CornerRadius = UDim.new(0,12)
-
+-- BLACK OUTLINE
 local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(0, 0, 0)
 stroke.Thickness = 3
-stroke.Color = Color3.new(1,1,1)
-stroke.Parent = lagBtn
+stroke.Transparency = 0.2
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.LineJoinMode = Enum.LineJoinMode.Round
+stroke.Parent = button
 
-makeDraggable(lagBtn)
-
--- REAL FREEZE LAG
-local function freezeLag()
-	task.wait(startDelay)
-	local endTime = tick() + lagDuration
-
-	while tick() < endTime do
-		RunService.RenderStepped:Wait()
-		for i = 1, 80000 do
-			math.random()
-		end
-	end
+-- OFFICIAL ROBLOX NOTIFICATION
+local function showNotice(text)
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = "Lag UI",
+			Text = text,
+			Duration = 3
+		})
+	end)
 end
 
--- CLICK LAG
-lagBtn.MouseButton1Click:Connect(function()
-	lagBtn.Text = "•••"
-	task.spawn(freezeLag)
+-- STATE
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+local locked = false
 
-	task.delay(startDelay + lagDuration, function()
-		lagBtn.Text = "Lag"
+-- HOLD LOGIC
+local HOLD_TIME = 1
+local holdToken = 0
+local longPressTriggered = false
+
+button.InputBegan:Connect(function(input)
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1
+	and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	longPressTriggered = false
+	holdToken += 1
+	local token = holdToken
+
+	dragInput = input
+
+	if not locked then
+		dragging = true
+		dragStart = input.Position
+		startPos = button.Position
+	end
+
+	task.delay(HOLD_TIME, function()
+		if holdToken ~= token then return end
+		if dragInput ~= input then return end
+
+		locked = not locked
+		longPressTriggered = true
+		showNotice(locked and "Button Locked" or "Button Unlocked")
 	end)
 end)
 
--- TOGGLE UI
-toggleBtn.MouseButton1Click:Connect(function()
-	uiVisible = not uiVisible
-	mainFrame.Visible = uiVisible
-end)
-
--- KEYBIND F
-UIS.InputBegan:Connect(function(input, gp)
-	if gp then return end
-	if input.KeyCode == Enum.KeyCode.F then
-		uiVisible = not uiVisible
-		mainFrame.Visible = uiVisible
+button.InputEnded:Connect(function(input)
+	if input == dragInput then
+		dragging = false
+		dragInput = nil
 	end
 end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input == dragInput and not locked then
+		local delta = input.Position - dragStart
+		button.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- LAG FREEZE
+local function lagFreeze()
+	if longPressTriggered then return end
+	if isLagActive then return end
+
+	isLagActive = true
+	button.Text = "•••"
+
+	local start = tick()
+	while tick() - start < getgenv().lagDuration do
+		local a = math.random(1, 1e6) * math.random(1, 1e6)
+		a = a / math.random(1, 1e4)
+	end
+
+	button.Text = "Lag"
+	isLagActive = false
+end
+
+button.MouseButton1Click:Connect(lagFreeze)
